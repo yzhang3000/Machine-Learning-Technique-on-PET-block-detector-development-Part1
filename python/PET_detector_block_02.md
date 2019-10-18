@@ -802,7 +802,7 @@ index_j=lut%1000-1; # cloumn index (X)
 
 ```
 
-<b>* define pixel_xy as the unique pixel/scintillator index in the 2d block as</b>
+* <b>define pixel_xy as the unique pixel/scintillator index in the 2d block as</b>
 ```
 pixel_xy = index_y * 15 + index_x
 ```
@@ -879,7 +879,7 @@ accu
 
 
 
-<b>* Therefore, the decoding accuracy with the lookup table is 0.522.</b>
+* <b>Therefore, the decoding accuracy with the lookup table is 0.522.</b>
 ***
 
 ###  
@@ -931,7 +931,7 @@ plt.show
 ![png](PET_detector_block_02_files/PET_detector_block_02_61_1.png)
 
 
-<b>* Pixel index does not have simple relationship to individual SiPM counts!</b>
+* <b>Pixel index does not have simple relationship to individual SiPM counts!</b>
 
 ####  
 #### 5.2 pixel index vs. combined SiPM counts
@@ -971,7 +971,7 @@ ax[1].set(xlabel='x_b, y_b', ylabel='index_x (red) and index_y (blue)')
 ![png](PET_detector_block_02_files/PET_detector_block_02_64_1.png)
 
 
-<b>* Pixel index have a monotonic relationship to the combined SiPM counts, therefore, regression or classification algorithms might work!</b>
+* <b>Pixel index have a monotonic relationship to the combined SiPM counts, therefore, regression or classification algorithms might work!</b>
 
 ####  
 #### 5.3 pixel discrimination using regression algorithms
