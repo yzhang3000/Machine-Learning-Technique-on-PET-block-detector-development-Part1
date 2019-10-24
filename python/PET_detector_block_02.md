@@ -104,10 +104,10 @@ fp.allvalues()
 
 
 
-    [<b'TH1D' b'latest_event_ID' 0x022614486b88>,
-     <b'TH1D' b'total_nb_primaries' 0x022614486f48>,
-     <TTree b'OpticalSinglesOpticaladder' at 0x02261448be48>,
-     <TTree b'SinglesAdder' at 0x022614e855f8>]
+    [<b'TH1D' b'latest_event_ID' 0x01cd8e8e1098>,
+     <b'TH1D' b'total_nb_primaries' 0x01cd8e8c8a98>,
+     <TTree b'OpticalSinglesOpticaladder' at 0x01cd8e8e8160>,
+     <TTree b'SinglesAdder' at 0x01cd8f13f940>]
 
 
 
@@ -119,11 +119,11 @@ fp.allitems()
 
 
 
-    [(b'latest_event_ID;1', <b'TH1D' b'latest_event_ID' 0x0226152b1c78>),
-     (b'total_nb_primaries;1', <b'TH1D' b'total_nb_primaries' 0x0226152b1f98>),
+    [(b'latest_event_ID;1', <b'TH1D' b'latest_event_ID' 0x01cd8e8c8f98>),
+     (b'total_nb_primaries;1', <b'TH1D' b'total_nb_primaries' 0x01cd8e8c8db8>),
      (b'OpticalSinglesOpticaladder;1',
-      <TTree b'OpticalSinglesOpticaladder' at 0x0226152db2b0>),
-     (b'SinglesAdder;1', <TTree b'SinglesAdder' at 0x022616ae6a58>)]
+      <TTree b'OpticalSinglesOpticaladder' at 0x01cd8f7065c0>),
+     (b'SinglesAdder;1', <TTree b'SinglesAdder' at 0x01cd91cf1da0>)]
 
 
 
@@ -563,7 +563,7 @@ plt.savefig(".\\figs2\\2d_map_anger_decoding.png", dpi=300)
 
 
 
-    <Figure size 720x480 with 0 Axes>
+    <Figure size 432x288 with 0 Axes>
 
 
 #### 4.2 Light-channel decoding
@@ -616,7 +616,7 @@ plt.savefig(".\\figs2\\2d_map_light_channel_decoding.png", dpi=300)
 
 
 
-    <Figure size 720x480 with 0 Axes>
+    <Figure size 432x288 with 0 Axes>
 
 
 #### 4.3 Composite decoding
@@ -715,7 +715,7 @@ twoD_map_datatype = np.dtype('>u4')
 file = "D:\\ML on PET block\\new_concept_block_lso\\new_concept_block_15x15\\results\\new_concept_block4a_planar_source_comp1_bigendian_lut2.dat"
 lut = np.fromfile(file, dtype=twoD_map_datatype).reshape((256,256))
 
-fig1 = plt.imshow(lut, cmap='jet')
+fig1 = plt.imshow(lut, cmap='prism')
 plt.title('Lookup map from loaded 2dmap file')
 plt.savefig(".\\figs2\\lut_from_lut_file.png", dpi=300)
 
@@ -809,7 +809,7 @@ pixel_xy = index_y * 15 + index_x
 
 
 ```python
-pixel_xy = np.array(df0['index_y'] * 15 + df0['index_x']
+pixel_xy = np.array(df0['index_y'] * 15 + df0['index_x'])
 plt.hist(pixel_xy, bins=225, histtype = 'step')
 plt.show
 ```
@@ -864,9 +864,6 @@ m=pixel_xy.size
 accu, decoded_xy = check_decoding(x_c[:m], y_c[:m], index_i, index_j, pixel_xy[:m])
 ```
 
-    588933 1128735
-    
-
 
 ```python
 accu
@@ -883,7 +880,7 @@ accu
 ***
 
 ###  
-### 5. Scintillator/Pixel discrimination using ML algorithms
+### 5. Scintillator/Pixel discrimination using ML algorithms - Part I, regression algorithms
 ***
 
 ####  
@@ -974,7 +971,7 @@ ax[1].set(xlabel='x_b, y_b', ylabel='index_x (red) and index_y (blue)')
 * <b>Pixel index have a monotonic relationship to the combined SiPM counts, therefore, regression or classification algorithms might work!</b>
 
 ####  
-#### 5.3 pixel discrimination using regression algorithms
+#### 5.3 pixel discrimination using regression algorithms - using pixel index as the only one output
 
 
 ```python
@@ -983,11 +980,789 @@ ax[1].set(xlabel='x_b, y_b', ylabel='index_x (red) and index_y (blue)')
 #==============================================================================
 
 from sklearn.model_selection import train_test_split
-X_train, X_test, pixel_xy_train, pixel_xy_test = train_test_split (X, pixel_xy, test_size = 0.2, random_state = 0)
+
+index = np.arange(X[:,0].size)
+X_train, X_test, pixel_xy_train, pixel_xy_test, index_train, index_test = \
+        train_test_split (X, pixel_xy, index, test_size = 0.2, random_state = 0)
 
 ```
 
-# To be continued ...
+
+```python
+accu, decoded_xy = check_decoding(x_c[index_test], y_c[index_test], index_i, index_j, pixel_xy[index_test])
+print ('accuracy for the testing data is %f.'%accu)
+```
+
+    accuracy for the testing data is 0.521898.
+    
+
+
+```python
+accu, decoded_xy = check_decoding(x_c[index_train], y_c[index_train], index_i, index_j, pixel_xy[index_train])
+print ('accuracy for the trainning data is %f.'%accu)
+```
+
+    accuracy for the trainning data is 0.521730.
+    
+
+#####  
+##### 5.3.1 linear regression
+
+
+
+```python
+from sklearn.linear_model import LinearRegression
+lin_reg = LinearRegression()
+lin_reg.fit(X_train, pixel_xy_train)
+lin_reg.intercept_, lin_reg.coef_
+```
+
+
+
+
+    (112.10517366517637,
+     array([-0.06849888,  0.06806856, -0.06789525,  0.06890463, -0.0524121 ,
+             0.05115546, -0.02265603,  0.02334874,  0.00681716, -0.00731927,
+             0.03822236, -0.03849436,  0.06498417, -0.06435202,  0.07922839,
+            -0.08078829,  0.0750127 , -0.07471007,  0.06775116, -0.06825595,
+             0.10364466, -0.10571765,  0.12718253, -0.12789485,  0.13836742,
+            -0.14103274,  0.13603968, -0.13577657,  0.14183952, -0.14499515,
+             0.1385801 , -0.13581617,  0.11918745, -0.1198089 ,  0.08437269,
+            -0.08250363]))
+
+
+
+
+```python
+y_pred = lin_reg.predict(X_test)
+```
+
+
+```python
+y_pred.astype(int)
+```
+
+
+
+
+    array([167,  72,  86, ..., 158, 106,  68])
+
+
+
+
+```python
+(y_pred+0.5).astype(int)
+```
+
+
+
+
+    array([168,  73,  87, ..., 159, 106,  68])
+
+
+
+
+```python
+pixel_xy_test
+```
+
+
+
+
+    array([187,  10,  77, ..., 217,  49,  71], dtype=int64)
+
+
+
+
+```python
+accu_lin_reg = sum(pixel_xy_test==y_pred.astype(int))/pixel_xy_test.size
+print('accuracy from linear regression: %f'%accu_lin_reg)
+```
+
+    accuracy from linear regression: 0.029325
+    
+
+
+```python
+accu_lin_reg = sum(pixel_xy_test==(y_pred+0.5).astype(int))/pixel_xy_test.size
+print('accuracy from linear regression: %f'%accu_lin_reg)
+```
+
+    accuracy from linear regression: 0.029267
+    
+
+* <b>The accuracy from linear regression is unacceptable!</b>
+
+#####  
+##### 5.3.2 polynomial regression using original SiPM counts
+
+
+```python
+from sklearn.preprocessing import PolynomialFeatures
+poly_features = PolynomialFeatures(degree=3, include_bias=False)
+N=10000
+X_train_poly = poly_features.fit_transform(X_train[:N])
+```
+
+
+```python
+X_test_poly = poly_features.transform(X_test)
+```
+
+
+```python
+lin_reg2 = LinearRegression()
+lin_reg2.fit(X_train_poly, pixel_xy_train[:N])
+```
+
+
+
+
+    LinearRegression(copy_X=True, fit_intercept=True, n_jobs=None,
+             normalize=False)
+
+
+
+
+```python
+pixel_xy_poly_pred = lin_reg2.predict(X_test_poly)
+```
+
+
+```python
+accu_poly_reg = sum(pixel_xy_test==pixel_xy_poly_pred.astype(int))/pixel_xy_test.size
+print('accuracy from polynomial regression: %f'%accu_poly_reg)
+```
+
+    accuracy from polynomial regression: 0.005550
+    
+
+
+```python
+accu_poly_reg = sum(pixel_xy_test==(pixel_xy_poly_pred+0.5).astype(int))/pixel_xy_test.size
+print('accuracy from polynomial regression: %f'%accu_poly_reg)
+```
+
+    accuracy from polynomial regression: 0.005395
+    
+
+* <b>Polynomial(degree=2), accuracy = 0.064714</b>
+* <b>Polynomial(degree=3), the polynmial fit_transform function will run out of memory with the whole training data set with 16GB memory under Windows 10, therefore, we limited the training data set size to 10000, and the accuracy = 0.005550, basically unacceptable.</b>
+
+#####  
+#####  5.3.3 polynomial regression using Anger decoding (x_t, y_t) or Light Channel decoding signal (x_b, y_b)
+
+
+```python
+# Ander decoding using x_t, y_t
+
+poly_features2 = PolynomialFeatures(degree=9, include_bias=False)
+X_t = np.hstack((x_t.reshape(-1,1), y_t.reshape(-1,1)))
+X_train2 = X_t[index_train]
+X_test2 = X_t[index_test] 
+X_train2_poly = poly_features2.fit_transform(X_train2)
+X_test2_poly = poly_features2.transform(X_test2)
+```
+
+
+```python
+lin_reg_t = LinearRegression()
+lin_reg_t.fit(X_train2_poly, pixel_xy_train)
+```
+
+
+
+
+    LinearRegression(copy_X=True, fit_intercept=True, n_jobs=None,
+             normalize=False)
+
+
+
+
+```python
+pixel_xy_poly2_pred = lin_reg_t.predict(X_test2_poly)
+
+accu_poly_reg = sum(pixel_xy_test==pixel_xy_poly2_pred.astype(int))/pixel_xy_test.size
+print('accuracy from polynomial regression: %f'%accu_poly_reg)
+
+accu_poly_reg = sum(pixel_xy_test==(pixel_xy_poly2_pred+0.5).astype(int))/pixel_xy_test.size
+print('accuracy from polynomial regression: %f'%accu_poly_reg)
+
+```
+
+    accuracy from polynomial regression: 0.053161
+    accuracy from polynomial regression: 0.053777
+    
+
+* <b>Polynomial(degree=3), accuracy = 0.045803</b>
+* <b>Polynomial(degree=4), accuracy = 0.045715</b>
+* <b>Polynomial(degree=5), accuracy = 0.051886</b>
+* <b>Polynomial(degree=9), accuracy = 0.053161</b>
+
+
+```python
+
+# light decoding using x_b, y_b
+
+poly_features2 = PolynomialFeatures(degree=21, include_bias=False)
+X_b = np.hstack((x_b.reshape(-1,1), y_b.reshape(-1,1)))
+X_train2 = X_b[index_train]
+X_test2 = X_b[index_test] 
+X_train2_poly = poly_features2.fit_transform(X_train2)
+X_test2_poly = poly_features2.transform(X_test2)
+
+lin_reg_b = LinearRegression()
+lin_reg_b.fit(X_train2_poly, pixel_xy_train)
+
+
+pixel_xy_poly2_pred = lin_reg_b.predict(X_test2_poly)
+
+accu_poly_reg = sum(pixel_xy_test==pixel_xy_poly2_pred.astype(int))/pixel_xy_test.size
+print('accuracy from polynomial regression: %f'%accu_poly_reg)
+
+accu_poly_reg = sum(pixel_xy_test==(pixel_xy_poly2_pred+0.5).astype(int))/pixel_xy_test.size
+print('accuracy from polynomial regression: %f'%accu_poly_reg)
+```
+
+    accuracy from polynomial regression: 0.083877
+    accuracy from polynomial regression: 0.088125
+    
+
+* <b>Polynomial(degree=3), accuracy = 0.067173</b>
+* <b>Polynomial(degree=5), accuracy = 0.072440</b>
+* <b>Polynomial(degree=7), accuracy = 0.074278</b>
+* <b>Polynomial(degree=9), accuracy = 0.075022</b>
+* <b>Polynomial(degree=15), accuracy = 0.081547</b>
+
+
+
+```python
+
+# composite decoding x_a, y_a
+
+X_a = np.hstack((x_a.reshape(-1,1), y_a.reshape(-1,1)))
+X_train2 = X_a[index_train]
+X_test2 = X_a[index_test] 
+
+for i in (2,3,5,7,9,15,21):
+    poly_features2 = PolynomialFeatures(degree=i, include_bias=False)
+
+    X_train2_poly = poly_features2.fit_transform(X_train2)
+    X_test2_poly = poly_features2.transform(X_test2)
+
+    lin_reg_a = LinearRegression()
+    lin_reg_a.fit(X_train2_poly, pixel_xy_train)
+
+
+    pixel_xy_poly2_pred = lin_reg_a.predict(X_test2_poly)
+
+    accu_poly_reg = sum(pixel_xy_test==(pixel_xy_poly2_pred+.5).astype(int))/pixel_xy_test.size
+    print('accuracy from polynomial regression (degree=%d): %f' % (i,accu_poly_reg))
+
+#    accu_poly_reg = sum(pixel_xy_test==(pixel_xy_poly2_pred+0.5).astype(int))/pixel_xy_test.size
+#    print('accuracy from polynomial regression: %f'%accu_poly_reg)
+```
+
+    accuracy from polynomial regression (degree=2): 0.023938
+    accuracy from polynomial regression (degree=3): 0.071700
+    accuracy from polynomial regression (degree=5): 0.072338
+    accuracy from polynomial regression (degree=7): 0.074654
+    accuracy from polynomial regression (degree=9): 0.075536
+    accuracy from polynomial regression (degree=15): 0.078902
+    accuracy from polynomial regression (degree=21): 0.080019
+    
+accuracy from polynomial regression (degree=2): 0.023938
+accuracy from polynomial regression (degree=3): 0.071700
+accuracy from polynomial regression (degree=5): 0.072338
+accuracy from polynomial regression (degree=7): 0.074654
+accuracy from polynomial regression (degree=9): 0.075536
+accuracy from polynomial regression (degree=15): 0.078902
+accuracy from polynomial regression (degree=21): 0.080019
+
+```python
+
+# composite decoding x_g, y_g
+X_g = np.hstack((x_g.reshape(-1,1), y_g.reshape(-1,1)))
+X_train2 = X_g[index_train]
+X_test2 = X_g[index_test] 
+
+for i in (2,3,5,7,9,15):
+    poly_features2 = PolynomialFeatures(degree=i, include_bias=False)
+
+    X_train2_poly = poly_features2.fit_transform(X_train2)
+    X_test2_poly = poly_features2.transform(X_test2)
+
+    lin_reg_g = LinearRegression()
+    lin_reg_g.fit(X_train2_poly, pixel_xy_train)
+
+
+    pixel_xy_poly2_pred = lin_reg_g.predict(X_test2_poly)
+
+    accu_poly_reg = sum(pixel_xy_test==(pixel_xy_poly2_pred+0.5).astype(int))/pixel_xy_test.size
+    print('accuracy from polynomial regression (degree=%d): %f' % (i,accu_poly_reg))
+
+
+```
+
+    accuracy from polynomial regression (degree=2): 0.024519
+    accuracy from polynomial regression (degree=3): 0.066738
+    accuracy from polynomial regression (degree=5): 0.069241
+    accuracy from polynomial regression (degree=7): 0.068674
+    accuracy from polynomial regression (degree=9): 0.068555
+    accuracy from polynomial regression (degree=15): 0.078477
+    
+
+
+```python
+
+# complex weight function decoding x_c, y_c
+
+X_c = np.hstack((x_c.reshape(-1,1), y_c.reshape(-1,1)))
+X_train2 = X_c[index_train]
+X_test2 = X_c[index_test] 
+
+for i in (2,3,5,7,9,15):
+    poly_features2 = PolynomialFeatures(degree=i, include_bias=False)
+
+    X_train2_poly = poly_features2.fit_transform(X_train2)
+    X_test2_poly = poly_features2.transform(X_test2)
+
+    lin_reg_c = LinearRegression()
+    lin_reg_c.fit(X_train2_poly, pixel_xy_train)
+
+
+    pixel_xy_poly2_pred = lin_reg_c.predict(X_test2_poly)
+
+    accu_poly_reg = sum(pixel_xy_test==(pixel_xy_poly2_pred+0.5).astype(int))/pixel_xy_test.size
+    print('accuracy from polynomial regression (degree=%d): %f' % (i,accu_poly_reg))
+
+```
+
+    accuracy from polynomial regression (degree=2): 0.046951
+    accuracy from polynomial regression (degree=3): 0.071026
+    accuracy from polynomial regression (degree=5): 0.077281
+    accuracy from polynomial regression (degree=7): 0.078003
+    accuracy from polynomial regression (degree=9): 0.078801
+    accuracy from polynomial regression (degree=15): 0.082610
+    
+
+####  
+#### 5.4 pixel discrimination using regression algorithms - using seperated x and y indices as the output
+
+#####  
+##### 5.4.0 plot prediction result
+
+
+```python
+from sklearn.utils import check_random_state
+
+def random_cmap(ncolors=256, random_state=None):
+    """
+    Generate a matplotlib colormap consisting of random (muted) colors.
+
+    A random colormap is very useful for plotting segmentation images.
+
+    Parameters
+    ----------
+    ncolors : int, optional
+        The number of colors in the colormap.  The default is 256.
+
+    random_state : int or `~numpy.random.RandomState`, optional
+        The pseudo-random number generator state used for random
+        sampling.  Separate function calls with the same
+        ``random_state`` will generate the same colormap.
+
+    Returns
+    -------
+    cmap : `matplotlib.colors.Colormap`
+        The matplotlib colormap with random colors.
+    """
+
+    from matplotlib import colors
+
+    prng = check_random_state(random_state)
+    h = prng.uniform(low=0.0, high=1.0, size=ncolors)
+    s = prng.uniform(low=0.4, high=0.9, size=ncolors)
+    v = prng.uniform(low=0.7, high=1.0, size=ncolors)
+    hsv = np.dstack((h, s, v))
+    rgb = np.squeeze(colors.hsv_to_rgb(hsv))
+
+    return colors.ListedColormap(rgb)
+```
+
+
+```python
+def plot_prediction_boundary(reg_func1, reg_func2, prep_func, cmap='hsv', axes=[0, 1.0, 0, 1.0], legend=False):
+    fig, ax = plt.subplots(figsize=(4,4))
+    
+    x1s = np.linspace(axes[0], axes[1], 256)
+    x2s = np.linspace(axes[2], axes[3], 256)
+    x1, x2 = np.meshgrid(x1s, x2s)
+    X_new = np.c_[x1.ravel(), x2.ravel()]
+    y1_pred = (reg_func1.predict(prep_func.transform(X_new))+0.5).astype(int).reshape(x1.shape)
+    y2_pred = (reg_func2.predict(prep_func.transform(X_new))+0.5).astype(int).reshape(x1.shape)
+
+    lut_pred = y1_pred+y2_pred*15
+    plt.imshow(lut_pred, alpha=0.5, cmap=cmap)
+    
+    return lut_pred
+    
+```
+
+#####  
+##### 5.4.1 polynomial regression
+
+
+```python
+# pixel_xy = np.array(df0['index_y'] * 15 + df0['index_x'])
+pixel_x = np.array(df0['index_x'])
+pixel_y = np.array(df0['index_y'])
+
+pixel_x_train = pixel_x[index_train]
+pixel_y_train = pixel_y[index_train]
+
+pixel_x_test = pixel_x[index_test]
+pixel_y_test = pixel_y[index_test]
+
+```
+
+
+```python
+
+# Anger decoding x_t, y_t
+
+X_t = np.hstack((x_t.reshape(-1,1), y_t.reshape(-1,1)))
+X_train = X_t[index_train]
+X_test = X_t[index_test] 
+
+#for i in (1,2,3,4,5,6,7,9,11,15):
+for i in (1,3,5,7):
+
+    poly_features = PolynomialFeatures(degree=i, include_bias=False)
+
+    X_train_poly = poly_features.fit_transform(X_train)
+    X_test_poly = poly_features.transform(X_test)
+
+    lin_reg_a_x = LinearRegression()
+    lin_reg_a_y = LinearRegression()
+    lin_reg_a_x.fit(X_train_poly, pixel_x_train)
+    lin_reg_a_y.fit(X_train_poly, pixel_y_train)
+
+
+    pixel_x_pred = lin_reg_a_x.predict(X_test_poly)
+    pixel_y_pred = lin_reg_a_y.predict(X_test_poly)
+
+    accu_poly_reg = sum(np.logical_and(pixel_x_test==(pixel_x_pred+.5).astype(int), pixel_y_test==(pixel_y_pred+.5).astype(int))) / pixel_x_test.size
+    print('accuracy from polynomial regression (degree=%d): %f' % (i,accu_poly_reg))
+    
+```
+
+    accuracy from polynomial regression (degree=1): 0.071726
+    accuracy from polynomial regression (degree=3): 0.319765
+    accuracy from polynomial regression (degree=5): 0.452626
+    accuracy from polynomial regression (degree=7): 0.475891
+    
+
+<b>
+accuracy from polynomial regression (degree=1): 0.071726  
+ 
+accuracy from polynomial regression (degree=2): 0.071775  
+accuracy from polynomial regression (degree=3): 0.319765  
+accuracy from polynomial regression (degree=4): 0.319774  
+accuracy from polynomial regression (degree=5): 0.452626  
+accuracy from polynomial regression (degree=6): 0.452604  
+accuracy from polynomial regression (degree=7): 0.475891  
+accuracy from polynomial regression (degree=9): 0.474314  
+accuracy from polynomial regression (degree=11): 0.471275  
+accuracy from polynomial regression (degree=15): 0.487989  
+</b>
+
+
+```python
+lut_pred = plot_prediction_boundary(lin_reg_a_x, lin_reg_a_y, poly_features, cmap='prism', axes=[0, 1.0, 0, 1.0], legend=False)
+plt.gcf()
+plt.title("Prediction with Anger decoding")
+plt.savefig(".\\figs2\\Prediction_with_Anger_decoding.png", dpi=300)
+
+plt.figure()
+plt.imshow(generate_grid(lut_pred), cmap='gray')
+plt.savefig(".\\figs2\\Prediction_with_Anger_decoding_grid.png", dpi=300)
+
+```
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_106_0.png)
+
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_106_1.png)
+
+
+
+```python
+
+# light channel decoding x_b, y_b
+
+X_b = np.hstack((x_b.reshape(-1,1), y_b.reshape(-1,1)))
+X_train = X_b[index_train]
+X_test = X_b[index_test] 
+
+#for i in (1,2,3,4,5,6,7,8):
+for i in (3,4,5,6,7):
+    poly_features = PolynomialFeatures(degree=i, include_bias=False)
+
+    X_train_poly = poly_features.fit_transform(X_train)
+    X_test_poly = poly_features.transform(X_test)
+
+    lin_reg_a_x = LinearRegression()
+    lin_reg_a_y = LinearRegression()
+    lin_reg_a_x.fit(X_train_poly, pixel_x_train)
+    lin_reg_a_y.fit(X_train_poly, pixel_y_train)
+
+
+    pixel_x_pred = lin_reg_a_x.predict(X_test_poly)
+    pixel_y_pred = lin_reg_a_y.predict(X_test_poly)
+
+    accu_poly_reg = sum(np.logical_and(pixel_x_test==(pixel_x_pred+.5).astype(int), pixel_y_test==(pixel_y_pred+.5).astype(int))) / pixel_x_test.size
+    print('accuracy from polynomial regression (degree=%d): %f' % (i,accu_poly_reg))
+```
+
+    accuracy from polynomial regression (degree=3): 0.502089
+    accuracy from polynomial regression (degree=4): 0.502111
+    accuracy from polynomial regression (degree=5): 0.497805
+    accuracy from polynomial regression (degree=6): 0.497805
+    accuracy from polynomial regression (degree=7): 0.499112
+    
+
+
+```python
+lut_pred = plot_prediction_boundary(lin_reg_a_x, lin_reg_a_y, poly_features, cmap='prism', axes=[0, 1.0, 0, 1.0], legend=False)
+plt.gcf()
+plt.title("Prediction with light channel decoding")
+plt.savefig(".\\figs2\\Prediction_with_light_channel_decoding.png", dpi=300)
+
+plt.figure()
+plt.imshow(generate_grid(lut_pred), cmap='gray')
+plt.savefig(".\\figs2\\Prediction_with_light_channel_decoding_grid.png", dpi=300)
+
+```
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_108_0.png)
+
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_108_1.png)
+
+
+
+```python
+
+```
+
+
+```python
+
+# composite decoding x_a, y_a
+
+X_a = np.hstack((x_a.reshape(-1,1), y_a.reshape(-1,1)))
+X_train = X_a[index_train]
+X_test = X_a[index_test] 
+
+for i in (1,2,3,4,5):
+    poly_features = PolynomialFeatures(degree=i, include_bias=False)
+
+    X_train_poly = poly_features.fit_transform(X_train)
+    X_test_poly = poly_features.transform(X_test)
+
+    lin_reg_a_x = LinearRegression()
+    lin_reg_a_y = LinearRegression()
+    lin_reg_a_x.fit(X_train_poly, pixel_x_train)
+    lin_reg_a_y.fit(X_train_poly, pixel_y_train)
+
+
+    pixel_x_pred = lin_reg_a_x.predict(X_test_poly)
+    pixel_y_pred = lin_reg_a_y.predict(X_test_poly)
+
+    accu_poly_reg = sum(np.logical_and(pixel_x_test==(pixel_x_pred+.5).astype(int), pixel_y_test==(pixel_y_pred+.5).astype(int))) / pixel_x_test.size
+    print('accuracy from polynomial regression (degree=%d): %f' % (i,accu_poly_reg))
+
+```
+
+    accuracy from polynomial regression (degree=1): 0.204393
+    accuracy from polynomial regression (degree=2): 0.204291
+    accuracy from polynomial regression (degree=3): 0.553141
+    accuracy from polynomial regression (degree=4): 0.553186
+    accuracy from polynomial regression (degree=5): 0.556211
+    
+
+
+```python
+lut_pred = plot_prediction_boundary(lin_reg_a_x, lin_reg_a_y, poly_features, cmap='prism', axes=[0, 1.0, 0, 1.0], legend=False)
+plt.gcf()
+plt.title("Prediction with average decoding")
+plt.savefig(".\\figs2\\Prediction_with_average_decoding.png", dpi=300)
+
+plt.figure()
+plt.imshow(generate_grid(lut_pred), cmap='gray')
+plt.savefig(".\\figs2\\Prediction_with_average_decoding_grid.png", dpi=300)
+
+```
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_111_0.png)
+
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_111_1.png)
+
+
+* <b>With degree = 3, the prediction reaches the plateau with the accuracy of 0.553, which exceeds the lookup table result of 0.522!</b>
+
+
+
+```python
+
+# composite decoding x_g, y_g
+
+X_g = np.hstack((x_g.reshape(-1,1), y_g.reshape(-1,1)))
+X_train = X_g[index_train]
+X_test = X_g[index_test] 
+
+for i in (1,2,3,4,5):
+    poly_features = PolynomialFeatures(degree=i, include_bias=False)
+
+    X_train_poly = poly_features.fit_transform(X_train)
+    X_test_poly = poly_features.transform(X_test)
+
+    lin_reg_a_x = LinearRegression()
+    lin_reg_a_y = LinearRegression()
+    lin_reg_a_x.fit(X_train_poly, pixel_x_train)
+    lin_reg_a_y.fit(X_train_poly, pixel_y_train)
+
+
+    pixel_x_pred = lin_reg_a_x.predict(X_test_poly)
+    pixel_y_pred = lin_reg_a_y.predict(X_test_poly)
+
+    accu_poly_reg = sum(np.logical_and(pixel_x_test==(pixel_x_pred+.5).astype(int), pixel_y_test==(pixel_y_pred+.5).astype(int))) / pixel_x_test.size
+    print('accuracy from polynomial regression (degree=%d): %f' % (i,accu_poly_reg))
+```
+
+    accuracy from polynomial regression (degree=1): 0.212158
+    accuracy from polynomial regression (degree=2): 0.211591
+    accuracy from polynomial regression (degree=3): 0.540844
+    accuracy from polynomial regression (degree=4): 0.551790
+    accuracy from polynomial regression (degree=5): 0.555795
+    
+
+
+```python
+lut_pred = plot_prediction_boundary(lin_reg_a_x, lin_reg_a_y, poly_features, cmap='prism', axes=[0, 1.0, 0, 1.0], legend=False)
+plt.gcf()
+plt.title("Prediction with geometry average decoding")
+plt.savefig(".\\figs2\\Prediction_with_geometry_decoding.png", dpi=300)
+
+plt.figure()
+plt.imshow(generate_grid(lut_pred), cmap='gray')
+plt.savefig(".\\figs2\\Prediction_with_geometry_decoding_grid.png", dpi=300)
+
+```
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_114_0.png)
+
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_114_1.png)
+
+
+
+```python
+
+# complex weight function decoding x_c, y_c
+
+X_c = np.hstack((x_c.reshape(-1,1), y_c.reshape(-1,1)))
+X_train = X_c[index_train]
+X_test = X_c[index_test] 
+
+#for i in (1,2,3,4,5,6,7,8,9,11):
+for i in (1,2,3,5,7,9,11):
+    poly_features = PolynomialFeatures(degree=i, include_bias=False)
+
+    X_train_poly = poly_features.fit_transform(X_train)
+    X_test_poly = poly_features.transform(X_test)
+
+    lin_reg_a_x = LinearRegression()
+    lin_reg_a_y = LinearRegression()
+    lin_reg_a_x.fit(X_train_poly, pixel_x_train)
+    lin_reg_a_y.fit(X_train_poly, pixel_y_train)
+
+
+    pixel_x_pred = lin_reg_a_x.predict(X_test_poly)
+    pixel_y_pred = lin_reg_a_y.predict(X_test_poly)
+
+    accu_poly_reg = sum(np.logical_and(pixel_x_test==(pixel_x_pred+.5).astype(int), pixel_y_test==(pixel_y_pred+.5).astype(int))) / pixel_x_test.size
+    print('accuracy from polynomial regression (degree=%d): %f' % (i,accu_poly_reg))
+```
+
+    accuracy from polynomial regression (degree=1): 0.353808
+    accuracy from polynomial regression (degree=2): 0.353803
+    accuracy from polynomial regression (degree=3): 0.527081
+    accuracy from polynomial regression (degree=5): 0.546045
+    accuracy from polynomial regression (degree=7): 0.545469
+    accuracy from polynomial regression (degree=9): 0.546178
+    accuracy from polynomial regression (degree=11): 0.546435
+    
+
+
+```python
+lut_pred = plot_prediction_boundary(lin_reg_a_x, lin_reg_a_y, poly_features, cmap='prism', axes=[0, 1.0, 0, 1.0], legend=False)
+plt.gcf()
+plt.title("Prediction with complex weight function decoding")
+plt.savefig(".\\figs2\\Prediction_with_complex_weight_function_decoding.png", dpi=300)
+
+plt.figure()
+plt.imshow(generate_grid(lut_pred), cmap='gray')
+plt.savefig(".\\figs2\\Prediction_with_complex_weight_function_decoding_grid.png", dpi=300)
+```
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_116_0.png)
+
+
+
+![png](PET_detector_block_02_files/PET_detector_block_02_116_1.png)
+
+
+####  
+#### 5.5 Conclusion for regression algorithms
+***
+* The regression algorithms using one output variable for the pixel index won't work.
+* Two output variables along X and Y axis are needed.
+* Polynomial Regreesion using all independed photo sensors as the input variables requires large amount of memory and may not yiedl good results.
+* Using processed energy distributions (summed photons in each side) as the input variables could provide good results.
+* Light channel decoding with polynomial regression could achieve 0.55 accuracy, compare to 0.52 accuracy using conventional method using lookup table.
+* Arithmatic average, Geometric average and complex weight average all provide similar accuracy from 0.54 to 0.55.
+
+##  
+## Continued in the next part - Part III
+
+
+```python
+import pickle
+
+datafile = open('./pickle/temp_data1','wb')
+
+temp_data = [x_t, y_t, x_b, y_b, x_a, y_a, x_g, y_g, x_c, y_c, index_train, index_test]
+pickle.dump(temp_data, datafile)
+
+datafile.close()
+```
+
+
+```python
+
+```
 
 
 ```python
