@@ -1930,7 +1930,7 @@ for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Chann
 * Logistic regression runs much slow than other methods, and its performance is poor. Best accuracy with geometric mean is 0.47.
 
 ##  
-## Continued in Part 2-2
+## Save data for Part 2-2
 
 
 ```python
@@ -1944,4 +1944,7 @@ pickle.dump(temp_data, datafile)
 datafile.close()
 ```
 
-## To be continued...
+##  
+## Continued in [Part 2-2](https://github.com/yzhang3000/Machine-Learning-Techniques-on-PET-block-detector-development/blob/master/python/PET_detector_block_02-2.md)
+
+

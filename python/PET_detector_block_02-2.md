@@ -7,7 +7,7 @@
 
 
 ###  
-### 6. Scintillator/Pixel discrimination using ML algorithms - Part II, classification algorithms
+### 6. Scintillator/Pixel discrimination using ML algorithms - Part II, using Non Linear models
 
 
 ```python
@@ -24,6 +24,7 @@ import matplotlib as mpl
 
 import pickle
 from sklearn.externals import joblib
+from sklearn import metrics
 import time
 
 plt.rcParams['figure.dpi'] = 120 # default is 72
@@ -146,7 +147,7 @@ def generate_grid(lut):
 ```
 
 ####  
-#### 6.1 pixel discrimination using classification algorithms - using seperated x and y indices as the output
+#### 6.1 pixel discrimination using decision tree classification algorithms - using seperated x and y indices as the output
 
 
 ```python
@@ -402,15 +403,16 @@ fig_i.show()
 * <b>Using tree classification algorithm, the accuracy could reach 0.56 - 0.57 for the arithmatic mean and geometric mean decoding, which exceed the results from lookup table and polynomial regression.</b>
 
 ####  
-#### 6.2 pixel discrimination using classification algorithms - using combined xy index as the output
+#### 6.2 pixel discrimination using decision tree classification algorithms - using combined xy index as the output
 
 
 ```python
-def plot_prediction_boundary3(reg_func, cmap='hsv', alpha=1, axes=[0, 1.0, 0, 1.0], title=''):
+def plot_prediction_boundary3(reg_func, cmap='hsv', alpha=1, axes=[0, 1.0, 0, 1.0], title='', ax=None):
     '''
     fitting the data with one function, the prediction is the unique pixel index
     '''
-    fig, ax = plt.subplots(figsize=(4,4))
+    if ax == None:
+        fig, ax = plt.subplots(figsize=(4,4))
     
     x1s = np.linspace(axes[0], axes[1], 256)
     x2s = np.linspace(axes[2], axes[3], 256)
@@ -419,9 +421,10 @@ def plot_prediction_boundary3(reg_func, cmap='hsv', alpha=1, axes=[0, 1.0, 0, 1.
     pixel_xy_pred = reg_func.predict(X_new).reshape(x1.shape)
 
     lut_pred = pixel_xy_pred
-    plt.imshow(lut_pred, alpha=alpha, cmap=cmap)
-    plt.title(title)
-    
+    ax.imshow(lut_pred, alpha=alpha, cmap=cmap)
+    ax.set_title(title)
+        
+        
     return lut_pred
 ```
 
@@ -435,17 +438,14 @@ def test_tree_classifier2(X, y, index_train, index_test, depth):
     X_train = X[index_train]
     X_test = X[index_test]
     
-    for tree_depth in depth:
 
-        tree_clf = DecisionTreeClassifier(max_depth=tree_depth, random_state=0)
+    tree_clf = DecisionTreeClassifier(max_depth=depth, random_state=0)
+    tree_fit(X_train, y[index_train], tree_clf)
+    pixel_xy_pred = tree_clf.predict(X_test)
 
-        tree_fit(X_train, y[index_train], tree_clf)
+    accuracy = sum(y[index_test]==pixel_xy_pred) / index_test.size
+    print('accuracy from tree classification (max_depth=%d): %f' % (depth,accuracy))
 
-        pixel_xy_pred = tree_clf.predict(X_test)
-
-        accuracy = sum(y[index_test]==pixel_xy_pred) / index_test.size
-        print('accuracy from tree classification (max_depth=%d): %f' % (tree_depth,accuracy))
-        
     return tree_clf
 ```
 
@@ -456,12 +456,30 @@ y = df0['index_x'].ravel() + df0['index_y'].ravel()*15
 
 
 ```python
+#for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+#                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+#                 (X_c,'Complex weight function')):
+#    print ('=== %s ==='%notes)
+#    clf = test_tree_classifier2(X, y, index_train, index_test,depth=[3,5,7,9,11,13,15])
+###############################################################################################
+    
 for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
                  (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
                  (X_c,'Complex weight function')):
     print ('=== %s ==='%notes)
-    clf = test_tree_classifier2(X, y, index_train, index_test,depth=[3,5,7,9,11,13,15])
-
+    
+    depth=[3,5,7,9,11,13,15]
+    scale = 3
+    fig, ax = plt.subplots(2,len(depth), figsize=(len(depth)*scale, 2*scale))
+    fig.suptitle("Decision Tree, " + notes, fontsize=16)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.9)
+    
+    for index, n in enumerate(depth):
+        clf = test_tree_classifier2(X, y, index_train, index_test, depth = n)
+        lut_pred = plot_prediction_boundary3(clf, cmap=random_cmap(), title='depth='+str(n), ax=ax[0,index])
+        ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
+     
 ```
 
     === Anger docoding ===
@@ -506,6 +524,26 @@ for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
     accuracy from tree classification (max_depth=15): 0.560229
     
 
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_23_1.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_23_2.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_23_3.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_23_4.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_23_5.png)
+
+
 === Anger docoding ===  
 accuracy from tree classification (max_depth=3): 0.034884  
 accuracy from tree classification (max_depth=5): 0.120963  
@@ -549,14 +587,20 @@ accuracy from tree classification (max_depth=15): 0.560229
 
 
 ```python
-for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+# plot the results using depth = 11
+
+fig, ax = plt.subplots(2,5, figsize=(20, 8))
+fig.suptitle("Decision Tree, depth=11", fontsize=16)
+fig.tight_layout()
+fig.subplots_adjust(top=0.9)
+
+for index, (X, notes) in enumerate(((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
                  (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
-                 (X_c,'Complex weight function')):
+                 (X_c,'Complex weight function'))):
     print ('=== %s ==='%notes)
-    clf1 = test_tree_classifier2(X, y, index_train, index_test, depth=[11])
-    lut_pred = plot_prediction_boundary3(clf1, cmap=random_cmap(), title=notes)
-    plt.figure()
-    plt.imshow(generate_grid(lut_pred), cmap='gray')
+    clf1 = test_tree_classifier2(X, y, index_train, index_test, depth=11)
+    lut_pred = plot_prediction_boundary3(clf1, cmap=random_cmap(), title=notes, ax=ax[0,index])
+    ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
 ```
 
     === Anger docoding ===
@@ -575,67 +619,266 @@ for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
 ![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_1.png)
 
 
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_2.png)
-
-
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_3.png)
-
-
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_4.png)
-
-
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_5.png)
-
-
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_6.png)
-
-
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_7.png)
-
-
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_8.png)
-
-
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_9.png)
-
-
-
-![png](PET_detector_block_02-2_files/PET_detector_block_02-2_25_10.png)
-
-
 * <b>Using tree classification algorithm with one output variable, the unique pixel/scintillator index, the accuracy could reach 0.57 for all three decoding techniques that combine the Anger and Light Channel results. The results are slightly improved from the tree classification with two output variables in x and y directions respectively.</b>
 
 ####  
-#### 6.3 pixel discrimination using SVM
+#### 6.3 pixel discrimination using Naive Bayes method
 ***
 
+
+
+```python
+# Fitting Naive Bayes
+from sklearn.naive_bayes import GaussianNB
+
+```
+
+
+```python
+def NB(X, y, index_train, index_test):
+    '''
+    output y is the unique pixel index pixel_xy
+    '''
+
+    X_train = X[index_train]
+    X_test = X[index_test]
+
+    nb = GaussianNB()
+    nb.fit(X_train, y[index_train])
+    pixel_xy_pred = nb.predict(X_test)
+
+    accuracy = sum(y[index_test]==pixel_xy_pred) / index_test.size
+    print('accuracy from Naive Bayes: %f' % (accuracy))
+        
+    return nb
+```
+
+
+```python
+
+fig, ax = plt.subplots(2,5, figsize=(15, 6))
+fig.suptitle("Naive Bayes", fontsize=16)
+fig.tight_layout()
+fig.subplots_adjust(top=0.9)
+
+for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+                 (X_c,'Complex weight function')) ):
+    print ('=== %s ==='%notes)
+    clf = NB(X, y, index_train, index_test)
+    lut_pred = plot_prediction_boundary3(clf, cmap=random_cmap(), title=notes, ax=ax[0,index])
+    ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
+    
+ 
+```
+
+    === Anger docoding ===
+    accuracy from Naive Bayes: 0.353661
+    === Light Channel decoding ===
+    accuracy from Naive Bayes: 0.456312
+    === Arithmatic mean ===
+    accuracy from Naive Bayes: 0.490407
+    === Geometric mean ===
+    accuracy from Naive Bayes: 0.507546
+    === Complex weight function ===
+    accuracy from Naive Bayes: 0.495081
+    
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_30_1.png)
+
+
+* <b>The Naive Bayes result is not good as the tree classification.</b>  
+=== Anger docoding ===  
+accuracy from Naive Bayes: 0.353661  
+=== Light Channel decoding ===  
+accuracy from Naive Bayes: 0.456312  
+=== Arithmatic mean ===  
+accuracy from Naive Bayes: 0.490407  
+=== Geometric mean ===  
+accuracy from Naive Bayes: 0.507546  
+=== Complex weight function ===  
+accuracy from Naive Bayes: 0.495081  
+
+
+####  
+#### 6.4 pixel discrimination using KNN method
+***
+
+
+```python
+from sklearn.neighbors import KNeighborsClassifier
+
+```
+
+
+```python
+def KNN(X, y, index_train, index_test, neighbors=3):
+    '''
+    output y is the unique pixel index pixel_xy
+    '''
+
+    X_train = X[index_train]
+    X_test = X[index_test]
+
+    knn = KNeighborsClassifier(n_neighbors=neighbors, metric='minkowski', p=2)
+    knn.fit(X_train, y[index_train])
+    pixel_xy_pred = knn.predict(X_test)
+
+#    accuracy = sum(y[index_test]==pixel_xy_pred) / index_test.size
+#    print('accuracy from KNN (neighbors=%d): %f' % (neighbors,accuracy))
+    print("accuracy from KNN (neighbors=%d): %f" % (neighbors, metrics.accuracy_score(y[index_test], pixel_xy_pred)))
+        
+    return knn
+```
+
+
+```python
+for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+                 (X_c,'Complex weight function')):
+    print ('=== %s ==='%notes)
+    
+    neighbor_range  = [3,5,7,8,11]
+    scale = 3
+    fig, ax = plt.subplots(2,len(neighbor_range), figsize=(len(neighbor_range)*scale, 2*scale))
+    fig.suptitle("KNN, "+notes, fontsize=16)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.9)
+    
+    for index, n in enumerate(neighbor_range):
+        clf = KNN(X, y, index_train, index_test, neighbors = n)
+        lut_pred = plot_prediction_boundary3(clf, cmap=random_cmap(), title='neighbors='+str(n), ax=ax[0,index])
+        ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
+ 
+```
+
+    === Anger docoding ===
+    accuracy from KNN (neighbors=3): 0.360820
+    accuracy from KNN (neighbors=5): 0.423465
+    accuracy from KNN (neighbors=7): 0.447979
+    accuracy from KNN (neighbors=8): 0.455545
+    accuracy from KNN (neighbors=11): 0.468547
+    === Light Channel decoding ===
+    accuracy from KNN (neighbors=3): 0.449038
+    accuracy from KNN (neighbors=5): 0.504813
+    accuracy from KNN (neighbors=7): 0.524787
+    accuracy from KNN (neighbors=8): 0.530616
+    accuracy from KNN (neighbors=11): 0.540968
+    === Arithmatic mean ===
+    accuracy from KNN (neighbors=3): 0.473951
+    accuracy from KNN (neighbors=5): 0.528884
+    accuracy from KNN (neighbors=7): 0.548379
+    accuracy from KNN (neighbors=8): 0.553558
+    accuracy from KNN (neighbors=11): 0.563511
+    === Geometric mean ===
+    accuracy from KNN (neighbors=3): 0.475696
+    accuracy from KNN (neighbors=5): 0.531825
+    accuracy from KNN (neighbors=7): 0.551183
+    accuracy from KNN (neighbors=8): 0.556743
+    accuracy from KNN (neighbors=11): 0.565044
+    === Complex weight function ===
+    accuracy from KNN (neighbors=3): 0.473180
+    accuracy from KNN (neighbors=5): 0.524547
+    accuracy from KNN (neighbors=7): 0.543307
+    accuracy from KNN (neighbors=8): 0.548189
+    accuracy from KNN (neighbors=11): 0.557451
+    
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_35_1.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_35_2.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_35_3.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_35_4.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_35_5.png)
+
+
+
+```python
+for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+                 (X_c,'Complex weight function')):
+    print ('=== %s ==='%notes)
+    
+    neighbor_range  = [8,11]
+    scale = 3
+    fig, ax = plt.subplots(2,len(neighbor_range), figsize=(len(neighbor_range)*scale, 2*scale))
+    fig.suptitle("KNN, "+notes, fontsize=16)
+    fig.tight_layout()
+    fig.subplots_adjust(top=0.9)
+    
+    for index, n in enumerate(neighbor_range):
+        clf = KNN(X, y, index_train, index_test, neighbors = n)
+        lut_pred = plot_prediction_boundary3(clf, cmap=random_cmap(), title='neighbors='+str(n), ax=ax[0,index])
+        ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
+
+#        print("Accuracy:", metrics.accuracy_score(y[index_test], clf.predict(X[index_test])))
+        
+```
+
+    === Anger docoding ===
+    accuracy from KNN (neighbors=%d): %f (8, 0.4555453671588105)
+    accuracy from KNN (neighbors=%d): %f (11, 0.4685466473530102)
+    === Light Channel decoding ===
+    accuracy from KNN (neighbors=%d): %f (8, 0.5306161322188113)
+    accuracy from KNN (neighbors=%d): %f (11, 0.5409684292593036)
+    === Arithmatic mean ===
+    accuracy from KNN (neighbors=%d): %f (8, 0.5535577438459869)
+    accuracy from KNN (neighbors=%d): %f (11, 0.5635113644921084)
+    === Geometric mean ===
+    accuracy from KNN (neighbors=%d): %f (8, 0.5567427252632372)
+    accuracy from KNN (neighbors=%d): %f (11, 0.565044053741578)
+    === Complex weight function ===
+    accuracy from KNN (neighbors=%d): %f (8, 0.5481889017351282)
+    accuracy from KNN (neighbors=%d): %f (11, 0.5574514832976739)
+    
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_36_1.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_36_2.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_36_3.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_36_4.png)
+
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_36_5.png)
+
+
+####  
+#### 6.5 pixel discrimination using SVM method
+***
 The previous studies are using the Anger docoding or Light Channel decoding techniques, in which the input variables are the combinations of original input variables (photosensor counts). Here we will use the SVM algorithm along with the original input variables to see whether good prediction could be made.
 
 
 ```python
-X_new
+
 ```
 
 
+```python
 
-
-    array([[0.        , 0.        ],
-           [0.00392157, 0.        ],
-           [0.00784314, 0.        ],
-           ...,
-           [0.99215686, 1.        ],
-           [0.99607843, 1.        ],
-           [1.        , 1.        ]])
-
-
+```
 
 
 ```python
