@@ -1735,7 +1735,191 @@ plt.savefig(".\\figs2\\Prediction_with_complex_weight_function_decoding_grid.png
 
 
 ####  
-#### 5.5 Conclusion for regression algorithms
+#### 5.5 Using logistic regression
+***
+
+
+```python
+from sklearn.linear_model import LogisticRegression
+from sklearn import metrics
+
+```
+
+
+```python
+def plot_prediction_boundary3(reg_func, cmap='hsv', alpha=1, axes=[0, 1.0, 0, 1.0], title='', ax=None):
+    '''
+    fitting the data with one function, the prediction is the unique pixel index
+    '''
+    if ax == None:
+        fig, ax = plt.subplots(figsize=(4,4))
+    
+    x1s = np.linspace(axes[0], axes[1], 256)
+    x2s = np.linspace(axes[2], axes[3], 256)
+    x1, x2 = np.meshgrid(x1s, x2s)
+    X_new = np.c_[x1.ravel(), x2.ravel()]
+    pixel_xy_pred = reg_func.predict(X_new).reshape(x1.shape)
+
+    lut_pred = pixel_xy_pred
+    ax.imshow(lut_pred, alpha=alpha, cmap=cmap)
+    ax.set_title(title)
+
+    return lut_pred
+
+```
+
+
+```python
+def test_logisticRegression(X, y, index_train, index_test):
+    '''
+    output y is the unique pixel index pixel_xy
+    '''
+
+    X_train = X[index_train]
+    X_test = X[index_test]
+
+    lr = LogisticRegression(C=1, random_state=1, solver ='newton-cg', tol=.001, n_jobs=8)
+    lr.fit(X_train, y[index_train])
+    pixel_xy_pred = lr.predict(X_test)
+
+    accuracy = sum(y[index_test]==pixel_xy_pred) / index_test.size
+    
+    print('accuracy score: %f' % (metrics.accuracy_score(y[index_test], pixel_xy_pred)))
+        
+    return lr
+
+```
+
+
+```python
+fig, ax = plt.subplots(2,5, figsize=(15, 6))
+fig.suptitle("Logistic Regression, " + notes, fontsize=16)
+fig.tight_layout()
+fig.subplots_adjust(top=0.9)
+
+for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+                 (X_c,'Complex weight function')) ):
+    print ('=== %s ==='%notes)
+    
+    clf = test_logisticRegression(X, pixel_xy, index_train[1:10000], index_test[1:10000])
+    lut_pred = plot_prediction_boundary3(clf, cmap='prism', title=notes,  ax=ax[0,index])
+    ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
+
+```
+
+    === Anger docoding ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.201120
+    === Light Channel decoding ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.209121
+    === Arithmatic mean ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.240024
+    === Geometric mean ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.246125
+    === Complex weight function ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.234123
+    
+
+
+![png](PET_detector_block_02-1_files/PET_detector_block_02-1_121_11.png)
+
+
+
+```python
+fig, ax = plt.subplots(2,5, figsize=(15, 6))
+fig.suptitle("Logistic Regression, " + notes, fontsize=16)
+fig.tight_layout()
+fig.subplots_adjust(top=0.9)
+
+for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+                 (X_c,'Complex weight function')) ):
+    print ('=== %s ==='%notes)
+    
+    clf = test_logisticRegression(X, pixel_xy, index_train, index_test)
+    lut_pred = plot_prediction_boundary3(clf, cmap='prism', title=notes,  ax=ax[0,index])
+    ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
+
+```
+
+    === Anger docoding ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.386508
+    === Light Channel decoding ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.375265
+    === Arithmatic mean ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.446314
+    === Geometric mean ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.469982
+    === Complex weight function ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\linear_model\logistic.py:460: FutureWarning: Default multi_class will be changed to 'auto' in 0.22. Specify the multi_class option to silence this warning.
+      "this warning.", FutureWarning)
+    
+
+    accuracy score: 0.407864
+    
+
+
+![png](PET_detector_block_02-1_files/PET_detector_block_02-1_122_11.png)
+
+
+####  
+#### 5.6 Conclusion for regression algorithms
 ***
 * The regression algorithms using one output variable for the pixel index won't work.
 * Two output variables along X and Y axis are needed.
@@ -1743,6 +1927,7 @@ plt.savefig(".\\figs2\\Prediction_with_complex_weight_function_decoding_grid.png
 * Using processed energy distributions (summed photons in each side) as the input variables could provide good results.
 * Light channel decoding with polynomial regression could achieve 0.55 accuracy, compare to 0.52 accuracy using conventional method using lookup table.
 * Arithmatic average, Geometric average and complex weight average all provide similar accuracy from 0.54 to 0.55.
+* Logistic regression runs much slow than other methods, and its performance is poor. Best accuracy with geometric mean is 0.47.
 
 ##  
 ## Continued in Part 2-2
