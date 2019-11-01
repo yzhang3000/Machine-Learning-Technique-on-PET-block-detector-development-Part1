@@ -26,6 +26,7 @@
 ##  
 ### Part 2 - Machine Learning algorithm based crystal discrimination technique for new concept PET detector
 
-* Part 2-1, Using linear and polynomial regression techniques [here](https://github.com/yzhang3000/Machine-Learning-Technique-on-PET-block-detector-development-Part1/blob/master/python/PET_detector_block_02-1.md)
+* Part 2-1, Using linear, polynomial and logistic regression techniques [here](https://github.com/yzhang3000/Machine-Learning-Technique-on-PET-block-detector-development-Part1/blob/master/python/PET_detector_block_02-1.md)
+* Part 2-2, Using nonlinear regression techniques (Decision Tree, Naive Bayes, etc) [here](https://github.com/yzhang3000/Machine-Learning-Technique-on-PET-block-detector-development-Part1/blob/master/python/PET_detector_block_02-2.md)
 
 ---
