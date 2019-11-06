@@ -544,6 +544,8 @@ for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
 ![png](PET_detector_block_02-2_files/PET_detector_block_02-2_23_5.png)
 
 
+<b> saved output <b>
+***
 === Anger docoding ===  
 accuracy from tree classification (max_depth=3): 0.034884  
 accuracy from tree classification (max_depth=5): 0.120963  
@@ -820,7 +822,7 @@ for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
     fig.subplots_adjust(top=0.9)
     
     for index, n in enumerate(neighbor_range):
-        clf = KNN(X, y, index_train, index_test, neighbors = n)
+        clf = KNN(X, pixel_xy, index_train, index_test, neighbors = n)
         lut_pred = plot_prediction_boundary3(clf, cmap=random_cmap(), title='neighbors='+str(n), ax=ax[0,index])
         ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
 
@@ -829,20 +831,20 @@ for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
 ```
 
     === Anger docoding ===
-    accuracy from KNN (neighbors=%d): %f (8, 0.4555453671588105)
-    accuracy from KNN (neighbors=%d): %f (11, 0.4685466473530102)
+    accuracy from KNN (neighbors=8): 0.455545
+    accuracy from KNN (neighbors=11): 0.468547
     === Light Channel decoding ===
-    accuracy from KNN (neighbors=%d): %f (8, 0.5306161322188113)
-    accuracy from KNN (neighbors=%d): %f (11, 0.5409684292593036)
+    accuracy from KNN (neighbors=8): 0.530616
+    accuracy from KNN (neighbors=11): 0.540968
     === Arithmatic mean ===
-    accuracy from KNN (neighbors=%d): %f (8, 0.5535577438459869)
-    accuracy from KNN (neighbors=%d): %f (11, 0.5635113644921084)
+    accuracy from KNN (neighbors=8): 0.553558
+    accuracy from KNN (neighbors=11): 0.563511
     === Geometric mean ===
-    accuracy from KNN (neighbors=%d): %f (8, 0.5567427252632372)
-    accuracy from KNN (neighbors=%d): %f (11, 0.565044053741578)
+    accuracy from KNN (neighbors=8): 0.556743
+    accuracy from KNN (neighbors=11): 0.565044
     === Complex weight function ===
-    accuracy from KNN (neighbors=%d): %f (8, 0.5481889017351282)
-    accuracy from KNN (neighbors=%d): %f (11, 0.5574514832976739)
+    accuracy from KNN (neighbors=8): 0.548189
+    accuracy from KNN (neighbors=11): 0.557451
     
 
 
@@ -868,17 +870,223 @@ for X, notes in ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
 ####  
 #### 6.5 pixel discrimination using SVM method
 ***
-The previous studies are using the Anger docoding or Light Channel decoding techniques, in which the input variables are the combinations of original input variables (photosensor counts). Here we will use the SVM algorithm along with the original input variables to see whether good prediction could be made.
+The previous studies are using the Anger decoding or Light Channel decoding techniques, in which the input variables are the combinations of original input variables (photosensor counts). Here we will use the SVM algorithm along with the original input variables to see whether better prediction could be made from the original variables.  
+<b>Since one of the SVM's advantage is that it works more effectively on high dimensional spaces, which means with more input variables, it works better. With the Anger decoding or Light Channel decoding techniques, the 36 input variables are reduced to only two variables. which might not be suitable for SVM algorithm. 
+
+
+* Before we trying using the 36 original input variables, we are trying with the preprosessed input variables anyway.
+
 
 
 ```python
+from sklearn.svm import SVC
+```
+
+
+```python
+def test_svm(X, y, index_train, index_test):
+    '''
+    output y is the unique pixel index pixel_xy
+    '''
+
+    X_train = X[index_train]
+    X_test = X[index_test]
+
+    clf = SVC(kernel='rbf', random_state=1, gamma='auto')
+    clf.fit(X_train, y[index_train])
+    pixel_xy_pred = clf.predict(X_test)
+
+    accuracy = sum(y[index_test]==pixel_xy_pred) / index_test.size
+    
+    print('accuracy score: %f' % (metrics.accuracy_score(y[index_test], pixel_xy_pred)))
+        
+    return clf
 
 ```
 
 
 ```python
+fig, ax = plt.subplots(2,5, figsize=(15, 6))
+fig.suptitle("SVM, ", fontsize=16)
+fig.tight_layout()
+fig.subplots_adjust(top=0.9)
+
+#for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+#                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+#                 (X_c,'Complex weight function')) ):
+for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'))):
+    
+    print ('=== %s ==='%notes)
+    
+    clf = test_svm1(X, pixel_xy, index_train[1:10000], index_test[1:10000], kernel='rbf')
+    lut_pred = plot_prediction_boundary3(clf, cmap='prism', title=notes,  ax=ax[0,index])
+    ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
 
 ```
+
+    === Anger docoding ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\svm\base.py:196: FutureWarning: The default value of gamma will change from 'auto' to 'scale' in version 0.22 to account better for unscaled features. Set gamma explicitly to 'auto' or 'scale' to avoid this warning.
+      "avoid this warning.", FutureWarning)
+    
+
+    accuracy score: 0.103310
+    === Light Channel decoding ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\svm\base.py:196: FutureWarning: The default value of gamma will change from 'auto' to 'scale' in version 0.22 to account better for unscaled features. Set gamma explicitly to 'auto' or 'scale' to avoid this warning.
+      "avoid this warning.", FutureWarning)
+    
+
+    accuracy score: 0.101310
+    
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_41_5.png)
+
+
+
+```python
+def test_svm1(X, y, index_train, index_test, kernel='linear'):
+    '''
+    output y is the unique pixel index pixel_xy
+    '''
+
+    X_train = X[index_train]
+    X_test = X[index_test]
+
+    clf = SVC(kernel=kernel, random_state=1)
+    clf.fit(X_train, y[index_train])
+    pixel_xy_pred = clf.predict(X_test)
+
+    accuracy = sum(y[index_test]==pixel_xy_pred) / index_test.size
+    
+    print('accuracy score: %f' % (metrics.accuracy_score(y[index_test], pixel_xy_pred)))
+        
+    return clf
+
+```
+
+
+```python
+fig, ax = plt.subplots(2,5, figsize=(15, 6))
+fig.suptitle("SVM, ", fontsize=16)
+fig.tight_layout()
+fig.subplots_adjust(top=0.9)
+
+
+#for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+#                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+#                 (X_c,'Complex weight function')) ):
+for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'))):
+    
+    print ('=== %s ==='%notes)
+    t0 = time.time()
+    clf1 = test_svm1(X, pixel_xy, index_train[1:10000], index_test[1:10000], kernel='linear')
+    t1 = time.time()
+    print ('Processing time for fitting %f sec'%(t1-t0))
+    t0 = t1
+    lut_pred = plot_prediction_boundary3(clf1, cmap='prism', title=notes,  ax=ax[0,index])
+    ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
+    t1 = time.time()
+    print ('Processing time for predicting %f sec'%(t1-t0))
+    
+
+```
+
+    === Anger docoding ===
+    accuracy score: 0.102010
+    Processing time for fitting 31.957430 sec
+    Processing time for predicting 199.254848 sec
+    === Light Channel decoding ===
+    accuracy score: 0.101910
+    Processing time for fitting 31.315839 sec
+    Processing time for predicting 199.606273 sec
+    
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_43_1.png)
+
+
+
+```python
+plot_prediction_boundary3(clf1, cmap='prism', title=notes,  ax=ax[0,index])
+```
+
+
+
+
+    array([[  0,   0,   0, ...,  29,  29,  29],
+           [  0,   0,   0, ...,  29,  29,  29],
+           [  0,   0,   0, ...,  29,  29,  29],
+           ...,
+           [196, 196, 196, ..., 222, 222, 222],
+           [196, 196, 196, ..., 222, 222, 222],
+           [196, 196, 196, ..., 222, 222, 222]], dtype=int64)
+
+
+
+
+```python
+fig, ax = plt.subplots(2,5, figsize=(15, 6))
+fig.suptitle("SVM, ", fontsize=16)
+fig.tight_layout()
+fig.subplots_adjust(top=0.9)
+
+
+#for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'), \
+#                 (X_a,'Arithmatic mean'), (X_g,'Geometric mean'), \
+#                 (X_c,'Complex weight function')) ):
+for index, (X, notes) in enumerate( ((X_t,'Anger docoding'), ( X_b, 'Light Channel decoding'))):
+    
+    print ('=== %s ==='%notes)
+    t0 = time.time()
+    clf1 = test_svm1(X, pixel_xy, index_train[1:10000], index_test[1:10000], kernel='sigmoid')
+    t1 = time.time()
+    print ('Processing time for fitting %f sec'%(t1-t0))
+    t0 = t1
+    lut_pred = plot_prediction_boundary3(clf1, cmap='prism', title=notes,  ax=ax[0,index])
+    ax[1,index].imshow(generate_grid(lut_pred), cmap='gray')
+    t1 = time.time()
+    print ('Processing time for predicting %f sec'%(t1-t0))
+    
+
+```
+
+    === Anger docoding ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\svm\base.py:196: FutureWarning: The default value of gamma will change from 'auto' to 'scale' in version 0.22 to account better for unscaled features. Set gamma explicitly to 'auto' or 'scale' to avoid this warning.
+      "avoid this warning.", FutureWarning)
+    
+
+    accuracy score: 0.053305
+    Processing time for fitting 33.816037 sec
+    Processing time for predicting 205.682369 sec
+    === Light Channel decoding ===
+    
+
+    C:\ProgramData\Anaconda3\lib\site-packages\sklearn\svm\base.py:196: FutureWarning: The default value of gamma will change from 'auto' to 'scale' in version 0.22 to account better for unscaled features. Set gamma explicitly to 'auto' or 'scale' to avoid this warning.
+      "avoid this warning.", FutureWarning)
+    
+
+    accuracy score: 0.057606
+    Processing time for fitting 34.190889 sec
+    Processing time for predicting 203.321519 sec
+    
+
+
+![png](PET_detector_block_02-2_files/PET_detector_block_02-2_45_5.png)
+
+
+###  
+* <b>Obviously the SVM algorithm is much slower than the other ML algorithms. Using partical (small percentage) trainning data as we did above shows very poor results that the accuracy is only a few percent.</b>
+* <b>A extra testing of the SVM algorithm using linear kernel with the complete trainning data set has been carried out, shown [here](https://github.com/yzhang3000/Machine-Learning-Techniques-on-PET-block-detector-development/blob/master/python/svm_test1.md) (svm_test1).</b>
+
+
+##  
+## Continued in [Part 2-3](https://github.com/yzhang3000/Machine-Learning-Techniques-on-PET-block-detector-development/blob/master/python/PET_detector_block_02-3.md)
 
 
 ```python
