@@ -261,11 +261,8 @@ accuracy from tree classification (max_depth=21): 0.667570
 
 ```python
 # Fitting Naive Bayes
-from sklearn.naive_bayes import GaussianNB
-```
+from sklearn.naive_bayes import GaussianNB, BernoulliNB, MultinomialNB, ComplementNB
 
-
-```python
 def NB(X, y, index_train, index_test):
     '''
     output y is the unique pixel index pixel_xy
@@ -276,26 +273,38 @@ def NB(X, y, index_train, index_test):
     y_train = y[index_train]
     y_test = y[index_test]
     
-    nb = GaussianNB()
-    nb.fit(X_train, y_train)
-    y_pred = nb.predict(X_test)
-
-    accuracy = sum(y_test==y_pred) / y_test.size
-    print('accuracy from Naive Bayes: %f' % (accuracy))
+    accuracy = []
+    clfs = []
+    
+    for nb in ['GaussianNB', 'BernoulliNB', 'MultinomialNB', 'ComplementNB']:
+        clf = globals()[nb]()
+        clf.fit(X_train, y_train)
+        clfs.append(clf)
         
-    return nb
+        y_pred = clf.predict(X_test)
+        accu = sum(y_test==y_pred) / y_test.size
+        accuracy.append(accu)
+        print('Accuracy from %s: %f' % (nb,accu))
+        
+    return clfs, accu
 ```
 
 
 ```python
-clf = NB(X, pixel_xy, index_train, index_test)   
+clfs, accu = NB(X, pixel_xy, index_train, index_test)   
  
 ```
 
-    accuracy from Naive Bayes: 0.445725
+    Accuracy from GaussianNB: 0.445725
+    Accuracy from BernoulliNB: 0.124037
+    Accuracy from MultinomialNB: 0.649577
+    Accuracy from ComplementNB: 0.146607
     
 
-* <b>The Naive Bayes with all channel inputs result of 0.445 is not as good as that with preprocessed inputs of 0.507.</b>  
+* <b>The Naive Bayes (Gassian) with all channel inputs result of 0.445 is not as good as that with preprocessed inputs of 0.507.</b>  
+* <b>The Naive Bayes for multivariate Bernoulli models produces poor result.</b>
+* <b>The Naive Bayes for multinomial models produces better result of 0.6496.</b>
+* <b>The Naive Bayes (complement) produces poor result of 0.1466.</b>
 
 
 ####  
@@ -445,10 +454,10 @@ for L in train_len:
 
 lines = []
 for j in range(len(accuracy)):
-    line, = plt.plot(neighbors, accuracy[j],'o-', label='trainning size = '+ str(train_len[j]))
+    line, = plt.plot(neighbors, accuracy[j],'o-', label='training size = '+ str(train_len[j]))
     lines.append(line)
     
-plt.title("Decision Tree with all input channels")
+plt.title("KNN Tree with all input channels")
 plt.xlabel("Number of neighbors")
 plt.ylabel("Accuracy")
 plt.legend()
@@ -494,7 +503,7 @@ plt.savefig(".\\figs2\\KNN_accu_with_all_channels.png", dpi=300)
     
 
 
-![png](PET_detector_block_02-3_files/PET_detector_block_02-3_26_1.png)
+![png](PET_detector_block_02-3_files/PET_detector_block_02-3_25_1.png)
 
 
 * <b>The KNN with all channel inputs could achieve over 0.70 with 100k events or 0.78 with 500k events which is much better than that with preprocessed inputs which is around 0.56.</b>  
@@ -559,6 +568,8 @@ data
 
 
 
+* The variable **data** contains a list of SVC classifiers which are trained with the data set of 10k, 20k, 30k, 40k, 50k events, respectively.
+
 
 ```python
 model = data[1][4]
@@ -568,7 +579,7 @@ model = data[1][4]
 ```python
 # test accuracy
 
-testing_data_length = 2000
+testing_data_length = 1000
 
 X_test = X[index_test[:testing_data_length]]
 pixel_xy_pred = model.predict(X_test)
@@ -577,8 +588,73 @@ print('accuracy score: %f' % (metrics.accuracy_score(pixel_xy_test[:testing_data
  
 ```
 
-    accuracy score: 0.691000
+    accuracy score: 0.709000
     
+
+
+```python
+accuracy = []
+test_lens= [100,500,1000,2000,4000]
+
+for test_len in test_lens:
+    accu = []
+    for train_len, clf in zip(data[0], data[1]):
+        y_pred = clf.predict(X[index_test[:test_len]])
+        accu.append( sum(y_pred==pixel_xy_test[:test_len]) / test_len)
+    accuracy.append(accu)
+        
+```
+
+
+```python
+accuracy
+```
+
+
+
+
+    [[0.64, 0.63, 0.65, 0.61, 0.67],
+     [0.628, 0.658, 0.668, 0.672, 0.698],
+     [0.63, 0.676, 0.689, 0.687, 0.709],
+     [0.6405, 0.6655, 0.6785, 0.68, 0.691],
+     [0.63, 0.66, 0.672, 0.68225, 0.6915]]
+
+
+
+
+```python
+lines = []
+for j in range(len(accuracy)):
+    line, = plt.plot(data[0], accuracy[j],'o-', label='Testing size = '+ str(test_lens[j]))
+    lines.append(line)
+    
+plt.title("SVM with all input channels")
+plt.xlabel("Training data size")
+plt.ylabel("Accuracy")
+plt.legend()
+
+plt.savefig(".\\figs2\\SVM_accu_with_all_channels.png", dpi=300)
+```
+
+
+![png](PET_detector_block_02-3_files/PET_detector_block_02-3_37_0.png)
+
+
+
+```python
+
+```
+
+###  
+### Conclusion - accuracy using all channel data as input
+***
+* Decision Tree: 0.667570 (max_depth=21) 
+* Naive Bayes (GaussianNB): 0.445725  
+* Naive Bayes (BernoulliNB): 0.124037  
+* Naive Bayes (MultinomialNB): 0.649577  
+* Naive Bayes (ComplementNB): 0.146607  
+* KNN: 0.783 (500k training, 7 neighbors)
+* SVM: 0.691 (50k training, 4000 testing)
 
 
 ```python
