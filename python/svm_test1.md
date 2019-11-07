@@ -244,16 +244,37 @@ for index, (X, notes) in enumerate( ((X_t,'Anger docoding'),(X_b,'light channel'
     Processing time for fitting 53934.414742 sec
     
 
+
+![png](svm_test1_files/svm_test1_6_1.png)
+
+
+    Processing time for predicting 15049.133118 sec
+    === light channel ===
+    accuracy score: 0.485991
+    Processing time for fitting 54709.050988 sec
+    
+
+
+![png](svm_test1_files/svm_test1_6_3.png)
+
+
+    Processing time for predicting 15291.979080 sec
+    
+
 * <b>SVM fitting is very slow, the fitting for the whole trainning data set (~900k) take 24+ hours with only input two variables!</b>   
+For example, the time for the fitting of all data set and the time for the predicting of 256x256 data points is:   
+>>
 === Anger docoding ===  
 accuracy score: 0.408781  
-Processing time for fitting 88436.392204 sec    
+Processing time for fitting 53934.414742 sec  
+Processing time for predicting 15049.133118 sec  
+=== light channel ===  
+accuracy score: 0.485991  
+Processing time for fitting 54709.050988 sec  
+Processing time for predicting 15291.979080 sec  
   
 * <b>Even with the whole data set, the accuracy of the SVM fitting with linear kernel and precessed input variables is only 0.41 which is much worse than what we achieved with the conventional lookup table method or other ML algorighms such as the Tree classification, etc.</b>
-import pickle
-file = open('./pickle/SVC_fitting_model_original_X', 'rb')
-data = pickle.load(file)
-file.close()
+> This poor performance can be explained with one of the important advantages of SVM which is that it works more effectively in high dimensional spaces. However, the input variables in the study above have only two dimensions.
 
 
 ```python
