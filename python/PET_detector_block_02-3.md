@@ -510,7 +510,444 @@ plt.savefig(".\\figs2\\KNN_accu_with_all_channels.png", dpi=300)
 
 
 ####  
-#### 7.4 pixel discrimination using SVM method
+#### 7.4 pixel discrimination using Random Forest method
+***
+
+
+```python
+from sklearn.ensemble import RandomForestClassifier
+
+```
+
+
+```python
+X_train = X[index_train]
+X_test = X[index_test]
+y_train = pixel_xy[index_train]
+y_test = pixel_xy[index_test]
+```
+
+#####  
+##### 7.4.1 effect from number of estimator and criterion
+
+
+```python
+accuracy = []
+n_est = [x for x in range(10,100,10)]
+crits = ['gini','entropy']
+train_length = 100000
+
+for crit in crits:
+    print("RF(crit=%s)" % (crit))
+    accu = []
+    
+    for n in n_est:
+        NF = RandomForestClassifier(n_estimators=n, criterion=crit, random_state=1, n_jobs=8, verbose=0)
+        
+        NF.fit(X_train[:train_length], y_train[:train_length])
+        
+        y_pred = NF.predict(X_test)
+        a = sum(y_test==y_pred) / y_test.size
+        print("--- accuracy from RF(n_est=%d, crit=%s): %f" % (n, crit, a))
+        accu.append(a)
+    
+    accuracy.append(accu)
+
+lines = []
+for j in range(len(accuracy)):
+    line, = plt.plot(n_est, accuracy[j], 'o-', label=crits[j])
+    lines.append(line)
+    
+plt.title("RF with all input channels")
+plt.xlabel("Number of estimators")
+plt.ylabel("Accuracy")
+plt.legend()
+
+plt.savefig(".\\figs2\\RandomForest_accu_vs_estimators.png", dpi=300)
+
+```
+
+    RF(crit=gini)
+    --- accuracy from RF(n_est=10, crit=gini): 0.683641
+    --- accuracy from RF(n_est=20, crit=gini): 0.712479
+    --- accuracy from RF(n_est=30, crit=gini): 0.722087
+    --- accuracy from RF(n_est=40, crit=gini): 0.727788
+    --- accuracy from RF(n_est=50, crit=gini): 0.730814
+    --- accuracy from RF(n_est=60, crit=gini): 0.733006
+    --- accuracy from RF(n_est=70, crit=gini): 0.734056
+    --- accuracy from RF(n_est=80, crit=gini): 0.735124
+    --- accuracy from RF(n_est=90, crit=gini): 0.736014
+    RF(crit=entropy)
+    --- accuracy from RF(n_est=10, crit=entropy): 0.675026
+    --- accuracy from RF(n_est=20, crit=entropy): 0.705755
+    --- accuracy from RF(n_est=30, crit=entropy): 0.717706
+    --- accuracy from RF(n_est=40, crit=entropy): 0.723372
+    --- accuracy from RF(n_est=50, crit=entropy): 0.726579
+    --- accuracy from RF(n_est=60, crit=entropy): 0.729117
+    --- accuracy from RF(n_est=70, crit=entropy): 0.730579
+    --- accuracy from RF(n_est=80, crit=entropy): 0.731988
+    --- accuracy from RF(n_est=90, crit=entropy): 0.733002
+    
+
+
+![png](PET_detector_block_02-3_files/PET_detector_block_02-3_31_1.png)
+
+
+
+```python
+train_length
+```
+
+
+
+
+    902988
+
+
+
+#####  
+##### 7.4.2 effect from data set length
+
+
+```python
+# compare data set length
+train_lengths = [10000, 50000, 100000, 500000, index_train.size]
+
+accuracy = []
+n_est = [x for x in range(10,20,20)]
+crits = ['gini','entropy']
+
+for crit in crits:
+    print("RF(crit=%s)" % (crit))
+    accu = []
+    
+    for train_length in train_lengths:
+        NF = RandomForestClassifier(n_estimators=10, criterion=crit, random_state=1, n_jobs=6, verbose=0)
+        
+        NF.fit(X_train[:train_length], y_train[:train_length])
+        
+        y_pred = NF.predict(X_test)
+        a = sum(y_test==y_pred) / y_test.size
+        print("--- accuracy from RF(n_est=%d, crit=%s): %f" % (n, crit, a))
+        accu.append(a)
+    
+    accuracy.append(accu)
+
+lines = []
+for j in range(len(accuracy)):
+    line, = plt.plot(train_lengths, accuracy[j], 'o-', label=crits[j])
+    lines.append(line)
+    
+plt.title("RF with all input channels")
+plt.xlabel("Training data set length")
+plt.ylabel("Accuracy")
+plt.legend()
+
+plt.savefig(".\\figs2\\RandomForest_accu_vs_dataset_length.png", dpi=300)
+
+```
+
+    RF(crit=gini)
+    --- accuracy from RF(n_est=90, crit=gini): 0.555179
+    --- accuracy from RF(n_est=90, crit=gini): 0.659406
+    --- accuracy from RF(n_est=90, crit=gini): 0.683641
+    --- accuracy from RF(n_est=90, crit=gini): 0.722659
+    --- accuracy from RF(n_est=90, crit=gini): 0.730313
+    RF(crit=entropy)
+    --- accuracy from RF(n_est=90, crit=entropy): 0.538275
+    --- accuracy from RF(n_est=90, crit=entropy): 0.647380
+    --- accuracy from RF(n_est=90, crit=entropy): 0.675026
+    --- accuracy from RF(n_est=90, crit=entropy): 0.717600
+    --- accuracy from RF(n_est=90, crit=entropy): 0.728138
+    
+
+
+![png](PET_detector_block_02-3_files/PET_detector_block_02-3_34_1.png)
+
+
+
+```python
+NF = RandomForestClassifier(n_estimators=10, criterion='gini', random_state=1, n_jobs=6, verbose=0)
+
+for train_length in [100000, 200000]:
+    t0 = time.time()
+    NF.fit(X_train[:train_length], y_train[:train_length])
+    t1 = time.time()
+    print(t1-t0)
+```
+
+    25.071857929229736
+    54.104488372802734
+    
+
+
+```python
+train_length = 100000
+for est in [10, 40, 100]:
+    NF = RandomForestClassifier(n_estimators=est, criterion='gini', random_state=1, n_jobs=4, verbose=0)
+    t0 = time.time()
+    NF.fit(X_train[:train_length], y_train[:train_length])
+    t1 = time.time()
+    print(t1-t0)
+```
+
+    2.3440160751342773
+    8.031768321990967
+    19.548283100128174
+    
+
+
+```python
+for test_length in [10000, 20000, 30000]:
+    t0 = time.time()
+    y_pred = NF.predict(X_test[:test_length])
+    accu= sum(y_test[:test_length]==y_pred) / test_length
+    t1 = time.time()
+    print(accu, t1-t0)
+```
+
+    0.7364 1.3861305713653564
+    0.7374 2.656273603439331
+    0.7362333333333333 3.9002692699432373
+    
+
+
+```python
+train_length = 200000
+test_length = 100000
+
+for mss in [2, 4, 6, 8, 20, 50, 100]:
+    NF = RandomForestClassifier(min_samples_split = mss, random_state=1, n_jobs=6, n_estimators=10)
+    t0 = time.time()
+    NF.fit(X_train[:train_length], y_train[:train_length])
+    y_pred = NF.predict(X_test[:test_length])
+    accu= sum(y_test[:test_length]==y_pred) / test_length
+    t1 = time.time()
+    print(accu, t1-t0)
+```
+
+    0.7041 5.95348048210144
+    0.71246 6.110172271728516
+    0.71408 5.422134160995483
+    0.71391 5.37605357170105
+    0.71592 4.796994924545288
+    0.70593 4.329159498214722
+    0.69304 4.015939235687256
+    
+
+
+```python
+train_length = 200000
+test_length = 100000
+
+for mf in [2, 4, 6, 12, 24, 36, 'auto', None]:
+#for mf in [6]:
+    NF = RandomForestClassifier(max_features=mf, random_state=1, n_jobs=6, n_estimators=10)
+    t0 = time.time()
+    NF.fit(X_train[:train_length], y_train[:train_length])
+    y_pred = NF.predict(X_test[:test_length])
+    accu= sum(y_test[:test_length]==y_pred) / test_length
+    t1 = time.time()
+    print(accu, t1-t0)
+```
+
+    0.64035 5.207427740097046
+    0.68983 4.969175338745117
+    0.7041 5.859835147857666
+    0.71816 8.422591924667358
+    0.72248 14.105207204818726
+    0.71992 19.244724988937378
+    0.7041 6.003503084182739
+    0.71992 19.110494136810303
+    
+
+
+```python
+train_length = 200000
+test_length = 100000
+
+for mln in [10, 100, 1000, 10000, 100000]:
+    NF = RandomForestClassifier(max_leaf_nodes=mln, random_state=1, n_jobs=6, n_estimators=10)
+    t0 = time.time()
+    NF.fit(X_train[:train_length], y_train[:train_length])
+    y_pred = NF.predict(X_test[:test_length])
+    accu= sum(y_test[:test_length]==y_pred) / test_length
+    t1 = time.time()
+    print(accu, t1-t0)
+```
+
+    0.21822 2.7969777584075928
+    0.52804 3.2918455600738525
+    0.66778 4.141111612319946
+    0.71383 4.719067811965942
+    0.70731 6.359941720962524
+    
+
+<b> Summary </b>  
+* training size:      accuracy [+], time [+]
+* testing size:       accuracy [n], time [+]
+* estimator:          accuracy [+], time [+]
+* min_samples_split:  accuracy [n], time [-]
+* max_features:       accuracy [+], time [+]
+* max_leaf_nodes:     accuracy [+], time [+]
+
+#####  
+##### 7.4.3 Using optimized parameters for best accuracy
+
+
+```python
+NF = RandomForestClassifier(n_estimators=120, criterion='gini', min_samples_split=20, random_state=1, n_jobs=8, verbose=2)
+t0 = time.time()
+NF.fit(X_train, y_train)
+y_pred = NF.predict(X_test)
+accu= sum(y_test==y_pred) / y_test.size
+t1 = time.time()
+print(accu, t1-t0)
+```
+
+    [Parallel(n_jobs=8)]: Using backend ThreadingBackend with 8 concurrent workers.
+    
+
+    building tree 1 of 120building tree 2 of 120
+    building tree 3 of 120building tree 4 of 120
+    
+    building tree 5 of 120
+    
+    building tree 6 of 120
+    building tree 7 of 120building tree 8 of 120
+    
+    building tree 9 of 120
+    building tree 10 of 120
+    building tree 11 of 120
+    building tree 12 of 120
+    building tree 13 of 120
+    building tree 14 of 120
+    building tree 15 of 120
+    building tree 16 of 120
+    building tree 17 of 120
+    building tree 18 of 120
+    building tree 19 of 120
+    building tree 20 of 120
+    building tree 21 of 120
+    building tree 22 of 120
+    building tree 23 of 120
+    building tree 24 of 120
+    building tree 25 of 120
+    building tree 26 of 120
+    building tree 27 of 120
+    building tree 28 of 120
+    building tree 29 of 120
+    building tree 30 of 120
+    building tree 31 of 120
+    building tree 32 of 120
+    building tree 33 of 120
+    building tree 34 of 120
+    
+
+    [Parallel(n_jobs=8)]: Done  25 tasks      | elapsed:   51.7s
+    
+
+    building tree 35 of 120
+    building tree 36 of 120
+    building tree 37 of 120
+    building tree 38 of 120
+    building tree 39 of 120
+    building tree 40 of 120
+    building tree 41 of 120
+    building tree 42 of 120
+    building tree 43 of 120
+    building tree 44 of 120
+    building tree 45 of 120
+    building tree 46 of 120
+    building tree 47 of 120
+    building tree 48 of 120
+    building tree 49 of 120
+    building tree 50 of 120
+    building tree 51 of 120
+    building tree 52 of 120
+    building tree 53 of 120
+    building tree 54 of 120
+    building tree 55 of 120
+    building tree 56 of 120
+    building tree 57 of 120
+    building tree 58 of 120
+    building tree 59 of 120
+    building tree 60 of 120
+    building tree 61 of 120
+    building tree 62 of 120
+    building tree 63 of 120
+    building tree 64 of 120
+    building tree 65 of 120
+    building tree 66 of 120
+    building tree 67 of 120
+    building tree 68 of 120
+    building tree 69 of 120
+    building tree 70 of 120
+    building tree 71 of 120
+    building tree 72 of 120
+    building tree 73 of 120
+    building tree 74 of 120
+    building tree 75 of 120
+    building tree 76 of 120
+    building tree 77 of 120
+    building tree 78 of 120
+    building tree 79 of 120
+    building tree 80 of 120
+    building tree 81 of 120
+    building tree 82 of 120
+    building tree 83 of 120
+    building tree 84 of 120
+    building tree 85 of 120
+    building tree 86 of 120
+    building tree 87 of 120
+    building tree 88 of 120
+    building tree 89 of 120
+    building tree 90 of 120
+    building tree 91 of 120
+    building tree 92 of 120
+    building tree 93 of 120
+    building tree 94 of 120
+    building tree 95 of 120
+    building tree 96 of 120
+    building tree 97 of 120
+    building tree 98 of 120
+    building tree 99 of 120
+    building tree 100 of 120
+    building tree 101 of 120
+    building tree 102 of 120
+    building tree 103 of 120
+    building tree 104 of 120
+    building tree 105 of 120
+    building tree 106 of 120
+    building tree 107 of 120
+    building tree 108 of 120
+    building tree 109 of 120
+    building tree 110 of 120
+    building tree 111 of 120
+    building tree 112 of 120
+    building tree 113 of 120
+    building tree 114 of 120
+    building tree 115 of 120
+    building tree 116 of 120
+    building tree 117 of 120
+    building tree 118 of 120
+    building tree 119 of 120
+    building tree 120 of 120
+    
+
+    [Parallel(n_jobs=8)]: Done 120 out of 120 | elapsed:  3.4min finished
+    [Parallel(n_jobs=8)]: Using backend ThreadingBackend with 8 concurrent workers.
+    [Parallel(n_jobs=8)]: Done  25 tasks      | elapsed:   22.8s
+    [Parallel(n_jobs=8)]: Done 120 out of 120 | elapsed:  1.5min finished
+    
+
+    0.7634608654821547 295.84202098846436
+    
+
+* <b>with optimized parameters, the accuracy of 0.7634608654821547 is achieved with RandomForest classifier.</b>
+
+####  
+#### 7.5 pixel discrimination using SVM method
 ***
 The previous studies are using the Anger decoding or Light Channel decoding techniques, in which the input variables are the combinations of original input variables (photosensor counts). Here we will use the SVM algorithm along with the original input variables to see whether better prediction could be made from the original variables.  
 <b>Since one of the SVM's advantage is that it works more effectively on high dimensional spaces, which means more input variables, it works better. With the Anger decoding or Light Channel decoding techniques, the 36 input variables are reduced to only two variables. which might not be suitable for SVM algorithm. 
@@ -521,7 +958,7 @@ from sklearn.svm import SVC
 ```
 
 #####  
-##### 7.4.1 SVM using original 36 sensors input variables
+##### 7.5.1 SVM using original 36 sensors input variables
 * Based on the study results from [svm_test2](https://github.com/yzhang3000/Machine-Learning-Techniques-on-PET-block-detector-development/blob/master/python/svm_test2.md) memtioned above, we are choosing 'poly' as the kernel and data set length is 10k to 50k.
 
 
@@ -637,7 +1074,7 @@ plt.savefig(".\\figs2\\SVM_accu_with_all_channels.png", dpi=300)
 ```
 
 
-![png](PET_detector_block_02-3_files/PET_detector_block_02-3_37_0.png)
+![png](PET_detector_block_02-3_files/PET_detector_block_02-3_55_0.png)
 
 
 
@@ -654,7 +1091,13 @@ plt.savefig(".\\figs2\\SVM_accu_with_all_channels.png", dpi=300)
 * Naive Bayes (MultinomialNB): 0.649577  
 * Naive Bayes (ComplementNB): 0.146607  
 * KNN: 0.783 (500k training, 7 neighbors)
-* SVM: 0.691 (50k training, 4000 testing)
+* Random Forest: 0.763 (estimator=120, criterion='gini', min_samples_split=20, fall training and testing)
+* SVM: 0.691 (50k training, 4000 testing)  
+  
+  <b>The KNN and Random Forest achieved best results, however, KNN is slow on prediction, and RF is slow on fitting and require large amount of memory. SVM is extream slow in fitting, however, with smaller amount of training data, it could achieve good result. Decision Tree yield resonable results with reasonable fitting time. Naive Bayes gives the worst results.</b>
+
+##  
+## Continued in [Part 2-4](https://github.com/yzhang3000/Machine-Learning-Techniques-on-PET-block-detector-development/blob/master/python/PET_detector_block_02-.md)
 
 
 ```python
