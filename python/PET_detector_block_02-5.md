@@ -207,7 +207,7 @@ estimator.evaluate(eval_input,steps=None)
  
  ## Conclusions
  * <b> The outputs of the loss from Tensorflow v1.4 and v2.0 are complete different. Obviously like the definitions of the loss are different in two versions. </b>
- * <b> The accuracy from the v1.4 is better than that from the v2.0 with the similar number of iterations, which is 0.7451306 vs 0.704284 with global_step of 49665 vs 55180. In fact, even with much less iterations (4515 global step), the accuray from v1.4 is better (71728086) than that from v2.0.</b>
+ * <b> The accuracy from the v1.4 is better than that from the v2.0 with the similar number of iterations, which is 0.7451306 vs 0.704284 with global_step of 49665 vs 55180. In fact, even with much less iterations (4515 global step), the accuray from v1.4 is better (0.71728086) than that from v2.0.</b>
  
 
 
