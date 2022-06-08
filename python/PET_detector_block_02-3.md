@@ -1097,7 +1097,7 @@ plt.savefig(".\\figs2\\SVM_accu_with_all_channels.png", dpi=300)
   <b>The KNN and Random Forest achieved best results, however, KNN is slow on prediction, and RF is slow on fitting and require large amount of memory. SVM is extream slow in fitting, however, with smaller amount of training data, it could achieve good result. Decision Tree yield resonable results with reasonable fitting time. Naive Bayes gives the worst results.</b>
 
 ##  
-## Continued in [Part 2-4](https://github.com/yzhang3000/Machine-Learning-Techniques-on-PET-block-detector-development/blob/master/python/PET_detector_block_02-.md)
+## Continued in [Part 2-4](https://github.com/yzhang3000/Machine-Learning-Techniques-on-PET-block-detector-development/blob/master/python/PET_detector_block_02-4.md)
 
 
 ```python
