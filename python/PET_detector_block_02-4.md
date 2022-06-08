@@ -868,6 +868,9 @@ print('accuracy = %f, proc_time = %f' % (score[1], t1-t0))
   * Parameters of the MLP model: hidden_layer_sizes=(120,30), activation='relu', max_iter=1000
 * <b>Using Keras ANN library, the accuracy is 0.7037 after one epoch.</b>
 
+##  
+## Continued in [Part 2-5](https://github.com/yzhang3000/Machine-Learning-Technique-on-PET-block-detector-development-Part1/blob/master/python/PET_detector_block_02-5.md)
+
 
 ```python
 
